@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bank Soal Kimia</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: linear-gradient(135deg, #022257, #6880ad);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+  width: 95vw;
+  max-width: 500px;
+}
+
+button {
+  width: 100%;
+  margin: 10px 0;
+  padding: 16px;
+  border: none;
+  border-radius: 10px;
+  background: #022257;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:hover { background: #0843a1; }
+
+#timer { color: red; font-weight: bold; }
+
+#questionBox {
+  border: 2px solid #eee;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+#detailBox {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.btnback {
+  background: #0843a1;
+  width: auto;          
+  display: inline-block;
+  font-size: 14px;
+  font-weight: bold;   
+  padding: 6px 10px;   
+  margin-top: 10px;
+  border-radius: 8px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- START -->
+<div id="startScreen">
+  <h1>Bank Soal Kimia</h1>
+  <button onclick="startQuiz()">Mulai</button>
+</div>
+
+<!-- MENU -->
+<div id="menuScreen" style="display:none;">
+  <h2>Pilih Materi</h2>
+  <button onclick="selectCategory('anion')">Anion & Kation</button>
+  <button onclick="selectCategory('tatanama')">Tata Nama & Biloks</button>
+  <button onclick="selectCategory('reaksi')">Reaksi Kimia</button>
+  <button onclick="selectCategory('stoikiometri')">Stoikiometri</button>
+</div>
+
+<!-- QUIZ -->
+<div id="quizScreen" style="display:none;">
+  <p id="timer">Waktu: 10</p>
+  <p id="progress"></p>
+
+  <div id="questionBox">
+    <h3 id="question"></h3>
+    <div id="options"></div>
+  </div>
+
+  <button class="btnback" onclick="backToMenuFromQuiz()" style="background:#0843a1;">
+     Kembali ke Menu
+  </button>
+</div>
+
+<!-- HASIL -->
+<div id="resultScreen" style="display:none;">
+  <h2>Hasil</h2>
+  <p id="finalScore"></p>
+  <button onclick="backToMenu()">Kembali ke Menu</button>
+  <button id="btnDetail" onclick="showDetail()">Lihat Detail</button>
+
+  <div id="detailBox" style="display:none; text-align:left;"></div>
+</div>
+
+</div>
+
+<audio id="soundBenar" src="264981-renatalmar-sfx-magic_hBWAjVCt.wav"></audio>
+<audio id="soundSalah" src="554053__gronkjaer__wronganswer.mp3"></audio>
+
+<script>
+
+// SHUFFLE
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// SOAL
+let allQuestions = {
+  anion: [
+    {question:"Cu<sup>2+</sup>", options:["Ion cupri","Ion cupro","Ion ferro","Ion ferri"], answer:"Ion cupri"},
+    {question:"Cu<sup>+</sup>", options:["Ion cupro","Ion cupri","Ion ferro","Ion ferri"], answer:"Ion cupro"},
+    {question:"Fe<sup>2+</sup>", options:["Ion ferro","Ion ferri","Ion cupri","Ion cupro"], answer:"Ion ferro"},
+    {question:"Fe<sup>3+</sup>", options:["Ion ferri","Ion ferro","Ion cupri","Ion cupro"], answer:"Ion ferri"},
+    {question:"Hg<sup>+</sup>", options:["Ion merkuro","Ion merkuri","Ion cupri","Ion ferri"], answer:"Ion merkuro"},
+    {question:"Hg<sup>2+</sup>", options:["Ion merkuri","Ion merkuro","Ion cupri","Ion ferri"], answer:"Ion merkuri"},
+    {question:"Sn<sup>2+</sup>", options:["Ion stanno","Ion stanni","Ion plumbo","Ion plumbi"], answer:"Ion stanno"},
+    {question:"Sn<sup>4+</sup>", options:["Ion stanni","Ion stanno","Ion plumbo","Ion plumbi"], answer:"Ion stanni"},
+    {question:"Pb<sup>2+</sup>", options:["Ion plumbo","Ion plumbi","Ion stanno","Ion stanni"], answer:"Ion plumbo"},
+    {question:"Pb<sup>4+</sup>", options:["Ion plumbi","Ion plumbo","Ion stanni","Ion stanno"], answer:"Ion plumbi"},
+
+    {question:"Au<sup>+</sup>", options:["Ion auro","Ion auri","Ion perak","Ion tembaga"], answer:"Ion auro"},
+    {question:"Au<sup>3+</sup>", options:["Ion auri","Ion auro","Ion perak","Ion tembaga"], answer:"Ion auri"},
+
+    {question:"Co<sup>2+</sup>", options:["Ion kobalt(II)","Ion kobalt(III)","Ion nikel","Ion besi"], answer:"Ion kobalt(II)"},
+    {question:"Co<sup>3+</sup>", options:["Ion kobalt(III)","Ion kobalt(II)","Ion nikel","Ion besi"], answer:"Ion kobalt(III)"},
+    {question:"Cr<sup>2+</sup>", options:["Ion krom(II)","Ion krom(III)","Ion besi","Ion nikel"], answer:"Ion krom(II)"},
+    {question:"Cr<sup>3+</sup>", options:["Ion krom(III)","Ion krom(II)","Ion besi","Ion nikel"], answer:"Ion krom(III)"},
+    {question:"Mn<sup>2+</sup>", options:["Ion mangan(II)","Ion mangan(IV)","Ion besi","Ion seng"], answer:"Ion mangan(II)"},
+    {question:"Mn<sup>4+</sup>", options:["Ion mangan(IV)","Ion mangan(II)","Ion besi","Ion seng"], answer:"Ion mangan(IV)"},
+    {question:"Ti<sup>2+</sup>", options:["Ion titan(II)","Ion titan(IV)","Ion besi","Ion seng"], answer:"Ion titan(II)"},
+    {question:"Ti<sup>4+</sup>", options:["Ion titan(IV)","Ion titan(II)","Ion besi","Ion seng"], answer:"Ion titan(IV)"},
+
+    {question:"V<sup>5+</sup>", options:["Ion vanadium(V)","Ion vanadium(III)","Ion besi","Ion seng"], answer:"Ion vanadium(V)"},
+    {question:"Zn<sup>2+</sup>", options:["Ion seng","Ion besi","Ion nikel","Ion tembaga"], answer:"Ion seng"},
+    {question:"Ag<sup>+</sup>", options:["Ion perak","Ion emas","Ion seng","Ion besi"], answer:"Ion perak"},
+    {question:"Ni<sup>2+</sup>", options:["Ion nikel","Ion seng","Ion besi","Ion tembaga"], answer:"Ion nikel"},
+    {question:"Al<sup>3+</sup>", options:["Ion aluminium","Ion boron","Ion galium","Ion indium"], answer:"Ion aluminium"},
+    {question:"B<sup>3+</sup>", options:["Ion boron","Ion aluminium","Ion galium","Ion indium"], answer:"Ion boron"},
+    {question:"Ga<sup>3+</sup>", options:["Ion galium","Ion aluminium","Ion indium","Ion boron"], answer:"Ion galium"},
+    {question:"In<sup>3+</sup>", options:["Ion indium","Ion galium","Ion aluminium","Ion boron"], answer:"Ion indium"},
+    {question:"Be<sup>2+</sup>", options:["Ion berilium","Ion magnesium","Ion kalsium","Ion barium"], answer:"Ion berilium"},
+    {question:"Mg<sup>2+</sup>", options:["Ion magnesium","Ion kalsium","Ion seng","Ion barium"], answer:"Ion magnesium"},
+
+    {question:"Ca<sup>2+</sup>", options:["Ion kalsium","Ion magnesium","Ion barium","Ion stronsium"], answer:"Ion kalsium"},
+    {question:"Sr<sup>2+</sup>", options:["Ion stronsium","Ion barium","Ion kalsium","Ion magnesium"], answer:"Ion stronsium"},
+    {question:"Ba<sup>2+</sup>", options:["Ion barium","Ion kalsium","Ion magnesium","Ion stronsium"], answer:"Ion barium"},
+    {question:"Na<sup>+</sup>", options:["Ion natrium","Ion kalium","Ion litium","Ion kalsium"], answer:"Ion natrium"},
+    {question:"K<sup>+</sup>", options:["Ion kalium","Ion natrium","Ion litium","Ion rubidium"], answer:"Ion kalium"},
+    {question:"Li<sup>+</sup>", options:["Ion litium","Ion natrium","Ion kalium","Ion kalsium"], answer:"Ion litium"},
+    {question:"Rb<sup>+</sup>", options:["Ion rubidium","Ion cesium","Ion kalium","Ion natrium"], answer:"Ion rubidium"},
+    {question:"Cs<sup>+</sup>", options:["Ion cesium","Ion rubidium","Ion kalium","Ion natrium"], answer:"Ion cesium"},
+    {question:"NH<sub>4</sub><sup>+</sup>", options:["Ion amonium","Ion natrium","Ion kalium","Ion hidrogen"], answer:"Ion amonium"},
+
+    /* ================== NAMA → RUMUS (40) ================== */
+
+    {question:"Ion cupri", options:["Cu<sup>2+</sup>","Cu<sup>+</sup>","Fe<sup>2+</sup>","Fe<sup>3+</sup>"], answer:"Cu<sup>2+</sup>"},
+    {question:"Ion cupro", options:["Cu<sup>+</sup>","Cu<sup>2+</sup>","Fe<sup>2+</sup>","Fe<sup>3+</sup>"], answer:"Cu<sup>+</sup>"},
+    {question:"Ion ferro", options:["Fe<sup>2+</sup>","Fe<sup>3+</sup>","Cu<sup>+</sup>","Cu<sup>2+</sup>"], answer:"Fe<sup>2+</sup>"},
+    {question:"Ion ferri", options:["Fe<sup>3+</sup>","Fe<sup>2+</sup>","Cu<sup>+</sup>","Cu<sup>2+</sup>"], answer:"Fe<sup>3+</sup>"},
+    {question:"Ion merkuro", options:["Hg<sup>+</sup>","Hg<sup>2+</sup>","Cu<sup>+</sup>","Fe<sup>2+</sup>"], answer:"Hg<sup>+</sup>"},
+    {question:"Ion merkuri", options:["Hg<sup>2+</sup>","Hg<sup>+</sup>","Cu<sup>2+</sup>","Fe<sup>3+</sup>"], answer:"Hg<sup>2+</sup>"},
+    {question:"Ion stanno", options:["Sn<sup>2+</sup>","Sn<sup>4+</sup>","Pb<sup>2+</sup>","Pb<sup>4+</sup>"], answer:"Sn<sup>2+</sup>"},
+    {question:"Ion stanni", options:["Sn<sup>4+</sup>","Sn<sup>2+</sup>","Pb<sup>4+</sup>","Pb<sup>2+</sup>"], answer:"Sn<sup>4+</sup>"},
+    {question:"Ion plumbo", options:["Pb<sup>2+</sup>","Pb<sup>4+</sup>","Sn<sup>2+</sup>","Sn<sup>4+</sup>"], answer:"Pb<sup>2+</sup>"},
+    {question:"Ion plumbi", options:["Pb<sup>4+</sup>","Pb<sup>2+</sup>","Sn<sup>4+</sup>","Sn<sup>2+</sup>"], answer:"Pb<sup>4+</sup>"},
+
+    {question:"Ion auro", options:["Au<sup>+</sup>","Au<sup>3+</sup>","Ag<sup>+</sup>","Cu<sup>+</sup>"], answer:"Au<sup>+</sup>"},
+    {question:"Ion auri", options:["Au<sup>3+</sup>","Au<sup>+</sup>","Ag<sup>+</sup>","Cu<sup>2+</sup>"], answer:"Au<sup>3+</sup>"},
+
+    {question:"Ion kobalt(II)", options:["Co<sup>2+</sup>","Co<sup>3+</sup>","Ni<sup>2+</sup>","Fe<sup>3+</sup>"], answer:"Co<sup>2+</sup>"},
+    {question:"Ion kobalt(III)", options:["Co<sup>3+</sup>","Co<sup>2+</sup>","Ni<sup>2+</sup>","Fe<sup>3+</sup>"], answer:"Co<sup>3+</sup>"},
+    {question:"Ion krom(II)", options:["Cr<sup>2+</sup>","Cr<sup>3+</sup>","Fe<sup>2+</sup>","Fe<sup>3+</sup>"], answer:"Cr<sup>2+</sup>"},
+    {question:"Ion krom(III)", options:["Cr<sup>3+</sup>","Cr<sup>2+</sup>","Fe<sup>3+</sup>","Fe<sup>2+</sup>"], answer:"Cr<sup>3+</sup>"},
+    {question:"Ion mangan(II)", options:["Mn<sup>2+</sup>","Mn<sup>4+</sup>","Fe<sup>2+</sup>","Fe<sup>3+</sup>"], answer:"Mn<sup>2+</sup>"},
+    {question:"Ion mangan(IV)", options:["Mn<sup>4+</sup>","Mn<sup>2+</sup>","Fe<sup>3+</sup>","Fe<sup>2+</sup>"], answer:"Mn<sup>4+</sup>"},
+    {question:"Ion titan(II)", options:["Ti<sup>2+</sup>","Ti<sup>4+</sup>","Fe<sup>2+</sup>","Fe<sup>3+</sup>"], answer:"Ti<sup>2+</sup>"},
+    {question:"Ion titan(IV)", options:["Ti<sup>4+</sup>","Ti<sup>2+</sup>","Fe<sup>3+</sup>","Fe<sup>2+</sup>"], answer:"Ti<sup>4+</sup>"},
+
+    {question:"Ion vanadium(V)", options:["V<sup>5+</sup>","V<sup>3+</sup>","Fe<sup>3+</sup>","Fe<sup>2+</sup>"], answer:"V<sup>5+</sup>"},
+    {question:"Ion seng", options:["Zn<sup>2+</sup>","Fe<sup>2+</sup>","Ni<sup>2+</sup>","Cu<sup>2+</sup>"], answer:"Zn<sup>2+</sup>"},
+    {question:"Ion perak", options:["Ag<sup>+</sup>","Au<sup>+</sup>","Cu<sup>+</sup>","Hg<sup>+</sup>"], answer:"Ag<sup>+</sup>"},
+    {question:"Ion nikel", options:["Ni<sup>2+</sup>","Zn<sup>2+</sup>","Fe<sup>2+</sup>","Cu<sup>2+</sup>"], answer:"Ni<sup>2+</sup>"},
+    {question:"Ion aluminium", options:["Al<sup>3+</sup>","B<sup>3+</sup>","Ga<sup>3+</sup>","In<sup>3+</sup>"], answer:"Al<sup>3+</sup>"},
+    {question:"Ion boron", options:["B<sup>3+</sup>","Al<sup>3+</sup>","Ga<sup>3+</sup>","In<sup>3+</sup>"], answer:"B<sup>3+</sup>"},
+    {question:"Ion galium", options:["Ga<sup>3+</sup>","Al<sup>3+</sup>","In<sup>3+</sup>","B<sup>3+</sup>"], answer:"Ga<sup>3+</sup>"},
+    {question:"Ion indium", options:["In<sup>3+</sup>","Ga<sup>3+</sup>","Al<sup>3+</sup>","B<sup>3+</sup>"], answer:"In<sup>3+</sup>"},
+    {question:"Ion berilium", options:["Be<sup>2+</sup>","Mg<sup>2+</sup>","Ca<sup>2+</sup>","Ba<sup>2+</sup>"], answer:"Be<sup>2+</sup>"},
+    {question:"Ion magnesium", options:["Mg<sup>2+</sup>","Ca<sup>2+</sup>","Ba<sup>2+</sup>","Zn<sup>2+</sup>"], answer:"Mg<sup>2+</sup>"},
+
+    {question:"Ion kalsium", options:["Ca<sup>2+</sup>","Mg<sup>2+</sup>","Ba<sup>2+</sup>","Sr<sup>2+</sup>"], answer:"Ca<sup>2+</sup>"},
+    {question:"Ion stronsium", options:["Sr<sup>2+</sup>","Ba<sup>2+</sup>","Ca<sup>2+</sup>","Mg<sup>2+</sup>"], answer:"Sr<sup>2+</sup>"},
+    {question:"Ion barium", options:["Ba<sup>2+</sup>","Ca<sup>2+</sup>","Mg<sup>2+</sup>","Sr<sup>2+</sup>"], answer:"Ba<sup>2+</sup>"},
+    {question:"Ion natrium", options:["Na<sup>+</sup>","K<sup>+</sup>","Li<sup>+</sup>","Ca<sup>2+</sup>"], answer:"Na<sup>+</sup>"},
+    {question:"Ion kalium", options:["K<sup>+</sup>","Na<sup>+</sup>","Li<sup>+</sup>","Rb<sup>+</sup>"], answer:"K<sup>+</sup>"},
+    {question:"Ion litium", options:["Li<sup>+</sup>","Na<sup>+</sup>","K<sup>+</sup>","Ca<sup>2+</sup>"], answer:"Li<sup>+</sup>"},
+    {question:"Ion rubidium", options:["Rb<sup>+</sup>","Cs<sup>+</sup>","K<sup>+</sup>","Na<sup>+</sup>"], answer:"Rb<sup>+</sup>"},
+    {question:"Ion cesium", options:["Cs<sup>+</sup>","Rb<sup>+</sup>","K<sup>+</sup>","Na<sup>+</sup>"], answer:"Cs<sup>+</sup>"},
+    {question:"Ion amonium", options:["NH<sub>4</sub><sup>+</sup>","Na<sup>+</sup>","K<sup>+</sup>","H<sup>+</sup>"], answer:"NH<sub>4</sub><sup>+</sup>"},
+
+    {question:"Cl<sup>-</sup>", options:["Ion klorida","Ion bromida","Ion iodida","Ion fluorida"], answer:"Ion klorida"},
+    {question:"SO<sub>4</sub><sup>2-</sup>", options:["Ion sulfat","Ion sulfit","Ion sulfida","Ion tiosulfat"], answer:"Ion sulfat"},
+    {question:"NO<sub>3</sub><sup>-</sup>", options:["Ion nitrat","Ion nitrit","Ion amonia","Ion oksida"], answer:"Ion nitrat"},
+    {question:"OH<sup>-</sup>", options:["Ion hidroksida","Ion oksida","Ion peroksida","Ion karbonat"], answer:"Ion hidroksida"},
+    {question:"CO<sub>3</sub><sup>2-</sup>", options:["Ion karbonat","Ion bikarbonat","Ion asetat","Ion oksalat"], answer:"Ion karbonat"},
+    {question:"NO<sub>2</sub><sup>-</sup>", options:["Ion nitrit","Ion nitrat","Ion amonium","Ion oksida"], answer:"Ion nitrit"},
+    {question:"F<sup>-</sup>", options:["Ion fluorida","Ion klorida","Ion bromida","Ion iodida"], answer:"Ion fluorida"},
+    {question:"Br<sup>-</sup>", options:["Ion bromida","Ion klorida","Ion iodida","Ion fluorida"], answer:"Ion bromida"},
+    {question:"I<sup>-</sup>", options:["Ion iodida","Ion bromida","Ion klorida","Ion fluorida"], answer:"Ion iodida"},
+    {question:"S<sup>2-</sup>", options:["Ion sulfida","Ion sulfat","Ion sulfit","Ion tiosulfat"], answer:"Ion sulfida"},
+    {question:"SO<sub>3</sub><sup>2-</sup>", options:["Ion sulfit","Ion sulfat","Ion sulfida","Ion tiosulfat"], answer:"Ion sulfit"},
+    {question:"HSO<sub>4</sub><sup>-</sup>", options:["Ion hidrogen sulfat","Ion sulfat","Ion sulfit","Ion tiosulfat"], answer:"Ion hidrogen sulfat"},
+    {question:"HCO<sub>3</sub><sup>-</sup>", options:["Ion hidrogen karbonat","Ion karbonat","Ion asetat","Ion oksalat"], answer:"Ion hidrogen karbonat"},
+    {question:"CH<sub>3</sub>COO<sup>-</sup>", options:["Ion asetat","Ion format","Ion karbonat","Ion oksalat"], answer:"Ion asetat"},
+    {question:"HCOO<sup>-</sup>", options:["Ion format","Ion asetat","Ion karbonat","Ion oksalat"], answer:"Ion format"},
+    {question:"PO<sub>4</sub><sup>3-</sup>", options:["Ion fosfat","Ion fosfit","Ion hipofosfit","Ion difosfat"], answer:"Ion fosfat"},
+    {question:"PO<sub>3</sub><sup>3-</sup>", options:["Ion fosfit","Ion fosfat","Ion hipofosfit","Ion difosfat"], answer:"Ion fosfit"},
+    {question:"CN<sup>-</sup>", options:["Ion sianida","Ion tiosianat","Ion nitrat","Ion nitrit"], answer:"Ion sianida"},
+    {question:"SCN<sup>-</sup>", options:["Ion tiosianat","Ion sianida","Ion nitrat","Ion nitrit"], answer:"Ion tiosianat"},
+    {question:"ClO<sup>-</sup>", options:["Ion hipoklorit","Ion klorit","Ion klorat","Ion perklorat"], answer:"Ion hipoklorit"},
+    {question:"ClO<sub>2</sub><sup>-</sup>", options:["Ion klorit","Ion hipoklorit","Ion klorat","Ion perklorat"], answer:"Ion klorit"},
+    {question:"ClO<sub>3</sub><sup>-</sup>", options:["Ion klorat","Ion klorit","Ion hipoklorit","Ion perklorat"], answer:"Ion klorat"},
+    {question:"ClO<sub>4</sub><sup>-</sup>", options:["Ion perklorat","Ion klorat","Ion klorit","Ion hipoklorit"], answer:"Ion perklorat"},
+    {question:"MnO<sub>4</sub><sup>-</sup>", options:["Ion permanganat","Ion manganat","Ion oksida","Ion hidroksida"], answer:"Ion permanganat"},
+    {question:"MnO<sub>4</sub><sup>2-</sup>", options:["Ion manganat","Ion permanganat","Ion oksida","Ion hidroksida"], answer:"Ion manganat"},
+    {question:"CrO<sub>4</sub><sup>2-</sup>", options:["Ion kromat","Ion dikromat","Ion kromit","Ion oksalat"], answer:"Ion kromat"},
+    {question:"Cr<sub>2</sub>O<sub>7</sub><sup>2-</sup>", options:["Ion dikromat","Ion kromat","Ion kromit","Ion oksalat"], answer:"Ion dikromat"},
+    {question:"O<sup>2-</sup>", options:["Ion oksida","Ion peroksida","Ion hidroksida","Ion karbonat"], answer:"Ion oksida"},
+    {question:"O<sub>2</sub><sup>2-</sup>", options:["Ion peroksida","Ion oksida","Ion hidroksida","Ion karbonat"], answer:"Ion peroksida"},
+    {question:"S<sub>2</sub>O<sub>3</sub><sup>2-</sup>", options:["Ion tiosulfat","Ion sulfat","Ion sulfit","Ion sulfida"], answer:"Ion tiosulfat"},
+    {question:"C<sub>2</sub>O<sub>4</sub><sup>2-</sup>", options:["Ion oksalat","Ion asetat","Ion karbonat","Ion format"], answer:"Ion oksalat"},
+    {question:"BO<sub>3</sub><sup>3-</sup>", options:["Ion borat","Ion fosfat","Ion karbonat","Ion silikat"], answer:"Ion borat"},
+    {question:"SiO<sub>3</sub><sup>2-</sup>", options:["Ion silikat","Ion borat","Ion karbonat","Ion fosfat"], answer:"Ion silikat"},
+    {question:"IO<sup>-</sup>", options:["Ion hipoiodit","Ion iodit","Ion iodat","Ion periodat"], answer:"Ion hipoiodit"},
+    {question:"IO<sub>2</sub><sup>-</sup>", options:["Ion iodit","Ion hipoiodit","Ion iodat","Ion periodat"], answer:"Ion iodit"},
+    {question:"IO<sub>3</sub><sup>-</sup>", options:["Ion iodat","Ion iodit","Ion hipoiodit","Ion periodat"], answer:"Ion iodat"},
+    {question:"IO<sub>4</sub><sup>-</sup>", options:["Ion periodat","Ion iodat","Ion iodit","Ion hipoiodit"], answer:"Ion periodat"},
+    {question:"BrO<sup>-</sup>", options:["Ion hipobromit","Ion bromit","Ion bromat","Ion perbromat"], answer:"Ion hipobromit"},
+    {question:"BrO<sub>2</sub><sup>-</sup>", options:["Ion bromit","Ion hipobromit","Ion bromat","Ion perbromat"], answer:"Ion bromit"},
+    {question:"BrO<sub>3</sub><sup>-</sup>", options:["Ion bromat","Ion bromit","Ion hipobromit","Ion perbromat"], answer:"Ion bromat"},
+    {question:"BrO<sub>4</sub><sup>-</sup>", options:["Ion perbromat","Ion bromat","Ion bromit","Ion hipobromit"], answer:"Ion perbromat"},
+    {question:"HS<sup>-</sup>", options:["Ion hidrogen sulfida","Ion sulfida","Ion sulfat","Ion sulfit"], answer:"Ion hidrogen sulfida"},
+    {question:"HPO<sub>4</sub><sup>2-</sup>", options:["Ion hidrogen fosfat","Ion fosfat","Ion fosfit","Ion hipofosfit"], answer:"Ion hidrogen fosfat"},
+    {question:"H<sub>2</sub>PO<sub>4</sub><sup>-</sup>", options:["Ion dihidrogen fosfat","Ion hidrogen fosfat","Ion fosfat","Ion fosfit"], answer:"Ion dihidrogen fosfat"},
+    {question:"ClO<sub>3</sub><sup>-</sup>", options:["Ion klorat","Ion klorit","Ion hipoklorit","Ion perklorat"], answer:"Ion klorat"},
+    {question:"SO<sub>3</sub><sup>2-</sup>", options:["Ion sulfit","Ion sulfat","Ion sulfida","Ion tiosulfat"], answer:"Ion sulfit"},
+    {question:"NO<sub>3</sub><sup>-</sup>", options:["Ion nitrat","Ion nitrit","Ion amonia","Ion oksida"], answer:"Ion nitrat"},
+    {question:"CO<sub>3</sub><sup>2-</sup>", options:["Ion karbonat","Ion bikarbonat","Ion asetat","Ion oksalat"], answer:"Ion karbonat"},
+    {question:"PO<sub>4</sub><sup>3-</sup>", options:["Ion fosfat","Ion fosfit","Ion hipofosfit","Ion difosfat"], answer:"Ion fosfat"},
+
+    {question:"Ion klorida", options:["Cl<sup>-</sup>","Br<sup>-</sup>","I<sup>-</sup>","F<sup>-</sup>"], answer:"Cl<sup>-</sup>"},
+    {question:"Ion sulfat", options:["SO<sub>4</sub><sup>2-</sup>","SO<sub>3</sub><sup>2-</sup>","S<sup>2-</sup>","S<sub>2</sub>O<sub>3</sub><sup>2-</sup>"], answer:"SO<sub>4</sub><sup>2-</sup>"},
+    {question:"Ion nitrat", options:["NO<sub>3</sub><sup>-</sup>","NO<sub>2</sub><sup>-</sup>","NH<sub>4</sub><sup>+</sup>","N<sup>3-</sup>"], answer:"NO<sub>3</sub><sup>-</sup>"},
+    {question:"Ion hidroksida", options:["OH<sup>-</sup>","O<sup>2-</sup>","O<sub>2</sub><sup>2-</sup>","H<sup>+</sup>"], answer:"OH<sup>-</sup>"},
+    {question:"Ion karbonat", options:["CO<sub>3</sub><sup>2-</sup>","HCO<sub>3</sub><sup>-</sup>","C<sub>2</sub>O<sub>4</sub><sup>2-</sup>","CO<sup>2-</sup>"], answer:"CO<sub>3</sub><sup>2-</sup>"},
+    {question:"Ion nitrit", options:["NO<sub>2</sub><sup>-</sup>","NO<sub>3</sub><sup>-</sup>","N<sup>3-</sup>","NH<sub>4</sub><sup>+</sup>"], answer:"NO<sub>2</sub><sup>-</sup>"},
+    {question:"Ion fluorida", options:["F<sup>-</sup>","Cl<sup>-</sup>","Br<sup>-</sup>","I<sup>-</sup>"], answer:"F<sup>-</sup>"},
+    {question:"Ion bromida", options:["Br<sup>-</sup>","Cl<sup>-</sup>","I<sup>-</sup>","F<sup>-</sup>"], answer:"Br<sup>-</sup>"},
+    {question:"Ion iodida", options:["I<sup>-</sup>","Br<sup>-</sup>","Cl<sup>-</sup>","F<sup>-</sup>"], answer:"I<sup>-</sup>"},
+    {question:"Ion sulfida", options:["S<sup>2-</sup>","SO<sub>4</sub><sup>2-</sup>","SO<sub>3</sub><sup>2-</sup>","HS<sup>-</sup>"], answer:"S<sup>2-</sup>"},
+    {question:"Ion sulfit", options:["SO<sub>3</sub><sup>2-</sup>","SO<sub>4</sub><sup>2-</sup>","S<sup>2-</sup>","S<sub>2</sub>O<sub>3</sub><sup>2-</sup>"], answer:"SO<sub>3</sub><sup>2-</sup>"},
+    {question:"Ion hidrogen sulfat", options:["HSO<sub>4</sub><sup>-</sup>","SO<sub>4</sub><sup>2-</sup>","H<sub>2</sub>SO<sub>4</sub>","HS<sup>-</sup>"], answer:"HSO<sub>4</sub><sup>-</sup>"},
+    {question:"Ion hidrogen karbonat", options:["HCO<sub>3</sub><sup>-</sup>","CO<sub>3</sub><sup>2-</sup>","C<sub>2</sub>O<sub>4</sub><sup>2-</sup>","CO<sub>2</sub>"], answer:"HCO<sub>3</sub><sup>-</sup>"},
+    {question:"Ion asetat", options:["CH<sub>3</sub>COO<sup>-</sup>","HCOO<sup>-</sup>","CO<sub>3</sub><sup>2-</sup>","C<sub>2</sub>O<sub>4</sub><sup>2-</sup>"], answer:"CH<sub>3</sub>COO<sup>-</sup>"},
+    {question:"Ion format", options:["HCOO<sup>-</sup>","CH<sub>3</sub>COO<sup>-</sup>","CO<sub>3</sub><sup>2-</sup>","C<sub>2</sub>O<sub>4</sub><sup>2-</sup>"], answer:"HCOO<sup>-</sup>"},
+    {question:"Ion fosfat", options:["PO<sub>4</sub><sup>3-</sup>","PO<sub>3</sub><sup>3-</sup>","HPO<sub>4</sub><sup>2-</sup>","H<sub>2</sub>PO<sub>4</sub><sup>-</sup>"], answer:"PO<sub>4</sub><sup>3-</sup>"},
+    {question:"Ion fosfit", options:["PO<sub>3</sub><sup>3-</sup>","PO<sub>4</sub><sup>3-</sup>","HPO<sub>4</sub><sup>2-</sup>","H<sub>2</sub>PO<sub>4</sub><sup>-</sup>"], answer:"PO<sub>3</sub><sup>3-</sup>"},
+    {question:"Ion sianida", options:["CN<sup>-</sup>","SCN<sup>-</sup>","NO<sub>3</sub><sup>-</sup>","NO<sub>2</sub><sup>-</sup>"], answer:"CN<sup>-</sup>"},
+    {question:"Ion tiosianat", options:["SCN<sup>-</sup>","CN<sup>-</sup>","NO<sub>3</sub><sup>-</sup>","NO<sub>2</sub><sup>-</sup>"], answer:"SCN<sup>-</sup>"},
+    {question:"Ion hipoklorit", options:["ClO<sup>-</sup>","ClO<sub>2</sub><sup>-</sup>","ClO<sub>3</sub><sup>-</sup>","ClO<sub>4</sub><sup>-</sup>"], answer:"ClO<sup>-</sup>"},
+    {question:"Ion klorit", options:["ClO<sub>2</sub><sup>-</sup>","ClO<sup>-</sup>","ClO<sub>3</sub><sup>-</sup>","ClO<sub>4</sub><sup>-</sup>"], answer:"ClO<sub>2</sub><sup>-</sup>"},
+    {question:"Ion klorat", options:["ClO<sub>3</sub><sup>-</sup>","ClO<sub>2</sub><sup>-</sup>","ClO<sup>-</sup>","ClO<sub>4</sub><sup>-</sup>"], answer:"ClO<sub>3</sub><sup>-</sup>"},
+    {question:"Ion perklorat", options:["ClO<sub>4</sub><sup>-</sup>","ClO<sub>3</sub><sup>-</sup>","ClO<sub>2</sub><sup>-</sup>","ClO<sup>-</sup>"], answer:"ClO<sub>4</sub><sup>-</sup>"},
+    {question:"Ion permanganat", options:["MnO<sub>4</sub><sup>-</sup>","MnO<sub>4</sub><sup>2-</sup>","MnO<sub>2</sub>","MnO"], answer:"MnO<sub>4</sub><sup>-</sup>"},
+    {question:"Ion manganat", options:["MnO<sub>4</sub><sup>2-</sup>","MnO<sub>4</sub><sup>-</sup>","MnO<sub>2</sub>","MnO"], answer:"MnO<sub>4</sub><sup>2-</sup>"},
+    {question:"Ion kromat", options:["CrO<sub>4</sub><sup>2-</sup>","Cr<sub>2</sub>O<sub>7</sub><sup>2-</sup>","CrO<sub>3</sub>","CrO"], answer:"CrO<sub>4</sub><sup>2-</sup>"},
+    {question:"Ion dikromat", options:["Cr<sub>2</sub>O<sub>7</sub><sup>2-</sup>","CrO<sub>4</sub><sup>2-</sup>","CrO<sub>3</sub>","CrO"], answer:"Cr<sub>2</sub>O<sub>7</sub><sup>2-</sup>"},
+    {question:"Ion oksida", options:["O<sup>2-</sup>","O<sub>2</sub><sup>2-</sup>","OH<sup>-</sup>","H<sup>+</sup>"], answer:"O<sup>2-</sup>"},
+    {question:"Ion peroksida", options:["O<sub>2</sub><sup>2-</sup>","O<sup>2-</sup>","OH<sup>-</sup>","H<sup>+</sup>"], answer:"O<sub>2</sub><sup>2-</sup>"},
+    {question:"Ion tiosulfat", options:["S<sub>2</sub>O<sub>3</sub><sup>2-</sup>","SO<sub>4</sub><sup>2-</sup>","SO<sub>3</sub><sup>2-</sup>","S<sup>2-</sup>"], answer:"S<sub>2</sub>O<sub>3</sub><sup>2-</sup>"},
+    {question:"Ion oksalat", options:["C<sub>2</sub>O<sub>4</sub><sup>2-</sup>","CO<sub>3</sub><sup>2-</sup>","CH<sub>3</sub>COO<sup>-</sup>","HCOO<sup>-</sup>"], answer:"C<sub>2</sub>O<sub>4</sub><sup>2-</sup>"},
+    {question:"Ion borat", options:["BO<sub>3</sub><sup>3-</sup>","PO<sub>4</sub><sup>3-</sup>","CO<sub>3</sub><sup>2-</sup>","SiO<sub>3</sub><sup>2-</sup>"], answer:"BO<sub>3</sub><sup>3-</sup>"},
+    {question:"Ion silikat", options:["SiO<sub>3</sub><sup>2-</sup>","BO<sub>3</sub><sup>3-</sup>","CO<sub>3</sub><sup>2-</sup>","PO<sub>4</sub><sup>3-</sup>"], answer:"SiO<sub>3</sub><sup>2-</sup>"},
+    {question:"Ion hipoiodit", options:["IO<sup>-</sup>","IO<sub>2</sub><sup>-</sup>","IO<sub>3</sub><sup>-</sup>","IO<sub>4</sub><sup>-</sup>"], answer:"IO<sup>-</sup>"},
+    {question:"Ion iodit", options:["IO<sub>2</sub><sup>-</sup>","IO<sup>-</sup>","IO<sub>3</sub><sup>-</sup>","IO<sub>4</sub><sup>-</sup>"], answer:"IO<sub>2</sub><sup>-</sup>"},
+    {question:"Ion iodat", options:["IO<sub>3</sub><sup>-</sup>","IO<sub>2</sub><sup>-</sup>","IO<sup>-</sup>","IO<sub>4</sub><sup>-</sup>"], answer:"IO<sub>3</sub><sup>-</sup>"},
+    {question:"Ion periodat", options:["IO<sub>4</sub><sup>-</sup>","IO<sub>3</sub><sup>-</sup>","IO<sub>2</sub><sup>-</sup>","IO<sup>-</sup>"], answer:"IO<sub>4</sub><sup>-</sup>"},
+    {question:"Ion hipobromit", options:["BrO<sup>-</sup>","BrO<sub>2</sub><sup>-</sup>","BrO<sub>3</sub><sup>-</sup>","BrO<sub>4</sub><sup>-</sup>"], answer:"BrO<sup>-</sup>"},
+    {question:"Ion bromit", options:["BrO<sub>2</sub><sup>-</sup>","BrO<sup>-</sup>","BrO<sub>3</sub><sup>-</sup>","BrO<sub>4</sub><sup>-</sup>"], answer:"BrO<sub>2</sub><sup>-</sup>"},
+    {question:"Ion bromat", options:["BrO<sub>3</sub><sup>-</sup>","BrO<sub>2</sub><sup>-</sup>","BrO<sup>-</sup>","BrO<sub>4</sub><sup>-</sup>"], answer:"BrO<sub>3</sub><sup>-</sup>"},
+    {question:"Ion perbromat", options:["BrO<sub>4</sub><sup>-</sup>","BrO<sub>3</sub><sup>-</sup>","BrO<sub>2</sub><sup>-</sup>","BrO<sup>-</sup>"], answer:"BrO<sub>4</sub><sup>-</sup>"},
+    {question:"Ion hidrogen sulfida", options:["HS<sup>-</sup>","S<sup>2-</sup>","SO<sub>4</sub><sup>2-</sup>","SO<sub>3</sub><sup>2-</sup>"], answer:"HS<sup>-</sup>"},
+    {question:"Ion hidrogen fosfat", options:["HPO<sub>4</sub><sup>2-</sup>","PO<sub>4</sub><sup>3-</sup>","H<sub>2</sub>PO<sub>4</sub><sup>-</sup>","PO<sub>3</sub><sup>3-</sup>"], answer:"HPO<sub>4</sub><sup>2-</sup>"},
+    {question:"Ion dihidrogen fosfat", options:["H<sub>2</sub>PO<sub>4</sub><sup>-</sup>","HPO<sub>4</sub><sup>2-</sup>","PO<sub>4</sub><sup>3-</sup>","PO<sub>3</sub><sup>3-</sup>"], answer:"H<sub>2</sub>PO<sub>4</sub><sup>-</sup>"}
+
+  ],
+
+  tatanama: [
+    {question:"CO", options:["Karbon monoksida","Karbon dioksida","Karbon trioksida","Karbon tetraoksida"], answer:"Karbon monoksida"},
+    {question:"CO<sub>2</sub>", options:["Karbon dioksida","Karbon monoksida","Karbon trioksida","Karbon tetraoksida"], answer:"Karbon dioksida"},
+    {question:"N<sub>2</sub>O", options:["Dinitrogen monoksida","Nitrogen dioksida","Dinitrogen trioksida","Nitrogen monoksida"], answer:"Dinitrogen monoksida"},
+    {question:"NO<sub>2</sub>", options:["Nitrogen dioksida","Nitrogen monoksida","Dinitrogen dioksida","Nitrogen trioksida"], answer:"Nitrogen dioksida"},
+    {question:"N<sub>2</sub>O<sub>5</sub>", options:["Dinitrogen pentaoksida","Dinitrogen trioksida","Nitrogen dioksida","Dinitrogen heksaoksida"], answer:"Dinitrogen pentaoksida"},
+    {question:"SO<sub>2</sub>", options:["Sulfur dioksida","Sulfur trioksida","Sulfur monoksida","Sulfur tetraoksida"], answer:"Sulfur dioksida"},
+    {question:"SO<sub>3</sub>", options:["Sulfur trioksida","Sulfur dioksida","Sulfur monoksida","Sulfur pentaoksida"], answer:"Sulfur trioksida"},
+    {question:"PCl<sub>3</sub>", options:["Fosfor triklorida","Fosfor pentaklorida","Fosfor diklorida","Fosfor monoklorida"], answer:"Fosfor triklorida"},
+    {question:"PCl<sub>5</sub>", options:["Fosfor pentaklorida","Fosfor triklorida","Fosfor diklorida","Fosfor heksaklorida"], answer:"Fosfor pentaklorida"},
+    {question:"SF<sub>6</sub>", options:["Sulfur heksafluorida","Sulfur difluorida","Sulfur tetrafluorida","Sulfur oktaklorida"], answer:"Sulfur heksafluorida"},
+    {question:"Cl<sub>2</sub>O<sub>7</sub>", options:["Diklor heptaoksida","Diklor trioksida","Klor dioksida","Diklor pentaoksida"], answer:"Diklor heptaoksida"},
+    {question:"I<sub>2</sub>O<sub>5</sub>", options:["Diiodin pentaoksida","Diiodin trioksida","Iodin dioksida","Diiodin heksaoksida"], answer:"Diiodin pentaoksida"},
+    {question:"NO", options:["Nitrogen monoksida","Nitrogen dioksida","Dinitrogen oksida","Nitrogen trioksida"], answer:"Nitrogen monoksida"},
+    {question:"N<sub>2</sub>O<sub>3</sub>", options:["Dinitrogen trioksida","Dinitrogen pentaoksida","Nitrogen dioksida","Dinitrogen monoksida"], answer:"Dinitrogen trioksida"},
+    {question:"CCl<sub>4</sub>", options:["Karbon tetraklorida","Karbon triklorida","Karbon diklorida","Karbon pentaklorida"], answer:"Karbon tetraklorida"},
+    {question:"P<sub>2</sub>O<sub>3</sub>", options:["Difosfor trioksida","Difosfor pentaoksida","Fosfor dioksida","Difosfor heksaoksida"], answer:"Difosfor trioksida"},
+    {question:"P<sub>2</sub>O<sub>5</sub>", options:["Difosfor pentaoksida","Difosfor trioksida","Fosfor dioksida","Difosfor heksaoksida"], answer:"Difosfor pentaoksida"},
+    {question:"SiO<sub>2</sub>", options:["Silikon dioksida","Silikon monoksida","Silikon trioksida","Silikon tetraoksida"], answer:"Silikon dioksida"},
+    {question:"BCl<sub>3</sub>", options:["Boron triklorida","Boron diklorida","Boron pentaklorida","Boron monoklorida"], answer:"Boron triklorida"},
+    {question:"BF<sub>3</sub>", options:["Boron trifluorida","Boron difluorida","Boron tetrafluorida","Boron heksafluorida"], answer:"Boron trifluorida"},
+
+    {question:"NaCl", options:["Natrium klorida","Kalium klorida","Kalsium klorida","Magnesium klorida"], answer:"Natrium klorida"},
+    {question:"KNO<sub>3</sub>", options:["Kalium nitrat","Kalium nitrit","Natrium nitrat","Kalsium nitrat"], answer:"Kalium nitrat"},
+    {question:"NaNO<sub>2</sub>", options:["Natrium nitrit","Natrium nitrat","Kalium nitrit","Kalsium nitrit"], answer:"Natrium nitrit"},
+    {question:"CaCO<sub>3</sub>", options:["Kalsium karbonat","Magnesium karbonat","Natrium karbonat","Kalium karbonat"], answer:"Kalsium karbonat"},
+    {question:"Na<sub>2</sub>SO<sub>4</sub>", options:["Natrium sulfat","Natrium sulfit","Kalium sulfat","Kalsium sulfat"], answer:"Natrium sulfat"},
+    {question:"Na<sub>2</sub>SO<sub>3</sub>", options:["Natrium sulfit","Natrium sulfat","Kalium sulfit","Kalsium sulfit"], answer:"Natrium sulfit"},
+    {question:"NH<sub>4</sub>Cl", options:["Amonium klorida","Natrium klorida","Kalium klorida","Kalsium klorida"], answer:"Amonium klorida"},
+    {question:"(NH<sub>4</sub>)<sub>2</sub>SO<sub>4</sub>", options:["Amonium sulfat","Amonium sulfit","Natrium sulfat","Kalium sulfat"], answer:"Amonium sulfat"},
+    {question:"Mg(OH)<sub>2</sub>", options:["Magnesium hidroksida","Kalsium hidroksida","Natrium hidroksida","Kalium hidroksida"], answer:"Magnesium hidroksida"},
+    {question:"AlCl<sub>3</sub>", options:["Aluminium klorida","Aluminium oksida","Aluminium sulfat","Aluminium nitrat"], answer:"Aluminium klorida"},
+    {question:"FeCl<sub>2</sub>", options:["Besi(II) klorida","Besi(III) klorida","Besi oksida","Besi nitrat"], answer:"Besi(II) klorida"},
+    {question:"FeCl<sub>3</sub>", options:["Besi(III) klorida","Besi(II) klorida","Besi oksida","Besi nitrat"], answer:"Besi(III) klorida"},
+    {question:"CuSO<sub>4</sub>", options:["Tembaga(II) sulfat","Tembaga(I) sulfat","Tembaga klorida","Tembaga nitrat"], answer:"Tembaga(II) sulfat"},
+    {question:"ZnCl<sub>2</sub>", options:["Seng klorida","Seng oksida","Seng sulfat","Seng nitrat"], answer:"Seng klorida"},
+    {question:"AgNO<sub>3</sub>", options:["Perak nitrat","Natrium nitrat","Kalium nitrat","Kalsium nitrat"], answer:"Perak nitrat"},
+    {question:"PbCl<sub>2</sub>", options:["Timbal(II) klorida","Timbal(IV) klorida","Timbal oksida","Timbal nitrat"], answer:"Timbal(II) klorida"},
+    {question:"PbCl<sub>4</sub>", options:["Timbal(IV) klorida","Timbal(II) klorida","Timbal oksida","Timbal nitrat"], answer:"Timbal(IV) klorida"},
+    {question:"FeSO<sub>4</sub>", options:["Besi(II) sulfat","Besi(III) sulfat","Besi klorida","Besi nitrat"], answer:"Besi(II) sulfat"},
+    {question:"Fe<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>", options:["Besi(III) sulfat","Besi(II) sulfat","Besi klorida","Besi nitrat"], answer:"Besi(III) sulfat"},
+    {question:"NaHCO<sub>3</sub>", options:["Natrium bikarbonat","Natrium karbonat","Kalium bikarbonat","Kalsium bikarbonat"], answer:"Natrium bikarbonat"},
+
+    {question:"Karbon monoksida", options:["CO","CO<sub>2</sub>","C<sub>2</sub>O","C<sub>2</sub>O<sub>2</sub>"], answer:"CO"},
+    {question:"Karbon dioksida", options:["CO<sub>2</sub>","CO","C<sub>2</sub>O","C<sub>2</sub>O<sub>2</sub>"], answer:"CO<sub>2</sub>"},
+    {question:"Dinitrogen monoksida", options:["N<sub>2</sub>O","NO","N<sub>2</sub>O<sub>3</sub>","N<sub>2</sub>O<sub>5</sub>"], answer:"N<sub>2</sub>O"},
+    {question:"Nitrogen dioksida", options:["NO<sub>2</sub>","NO","N<sub>2</sub>O","N<sub>2</sub>O<sub>3</sub>"], answer:"NO<sub>2</sub>"},
+    {question:"Dinitrogen pentaoksida", options:["N<sub>2</sub>O<sub>5</sub>","N<sub>2</sub>O<sub>3</sub>","NO<sub>2</sub>","N<sub>2</sub>O"], answer:"N<sub>2</sub>O<sub>5</sub>"},
+    {question:"Sulfur dioksida", options:["SO<sub>2</sub>","SO<sub>3</sub>","S<sub>2</sub>O","SO"], answer:"SO<sub>2</sub>"},
+    {question:"Sulfur trioksida", options:["SO<sub>3</sub>","SO<sub>2</sub>","S<sub>2</sub>O","SO"], answer:"SO<sub>3</sub>"},
+    {question:"Fosfor triklorida", options:["PCl<sub>3</sub>","PCl<sub>5</sub>","PCl","P<sub>2</sub>Cl<sub>3</sub>"], answer:"PCl<sub>3</sub>"},
+    {question:"Fosfor pentaklorida", options:["PCl<sub>5</sub>","PCl<sub>3</sub>","PCl","P<sub>2</sub>Cl<sub>5</sub>"], answer:"PCl<sub>5</sub>"},
+    {question:"Sulfur heksafluorida", options:["SF<sub>6</sub>","SF<sub>4</sub>","SF<sub>2</sub>","S<sub>2</sub>F<sub>6</sub>"], answer:"SF<sub>6</sub>"},
+    {question:"Diklor heptaoksida", options:["Cl<sub>2</sub>O<sub>7</sub>","Cl<sub>2</sub>O<sub>5</sub>","ClO<sub>2</sub>","ClO<sub>3</sub>"], answer:"Cl<sub>2</sub>O<sub>7</sub>"},
+    {question:"Diiodin pentaoksida", options:["I<sub>2</sub>O<sub>5</sub>","I<sub>2</sub>O<sub>3</sub>","IO<sub>2</sub>","IO<sub>3</sub>"], answer:"I<sub>2</sub>O<sub>5</sub>"},
+    {question:"Karbon tetraklorida", options:["CCl<sub>4</sub>","CCl<sub>3</sub>","CCl<sub>2</sub>","CCl<sub>5</sub>"], answer:"CCl<sub>4</sub>"},
+    {question:"Silikon dioksida", options:["SiO<sub>2</sub>","SiO","SiO<sub>3</sub>","SiO<sub>4</sub>"], answer:"SiO<sub>2</sub>"},
+    {question:"Boron trifluorida", options:["BF<sub>3</sub>","BF<sub>2</sub>","BF<sub>4</sub>","B<sub>2</sub>F<sub>3</sub>"], answer:"BF<sub>3</sub>"},
+
+    {question:"Natrium klorida", options:["NaCl","KCl","CaCl<sub>2</sub>","MgCl<sub>2</sub>"], answer:"NaCl"},
+    {question:"Kalium nitrat", options:["KNO<sub>3</sub>","KNO<sub>2</sub>","NaNO<sub>3</sub>","Ca(NO<sub>3</sub>)<sub>2</sub>"], answer:"KNO<sub>3</sub>"},
+    {question:"Natrium nitrit", options:["NaNO<sub>2</sub>","NaNO<sub>3</sub>","KNO<sub>2</sub>","Ca(NO<sub>2</sub>)<sub>2</sub>"], answer:"NaNO<sub>2</sub>"},
+    {question:"Kalsium karbonat", options:["CaCO<sub>3</sub>","MgCO<sub>3</sub>","Na<sub>2</sub>CO<sub>3</sub>","K<sub>2</sub>CO<sub>3</sub>"], answer:"CaCO<sub>3</sub>"},
+    {question:"Natrium sulfat", options:["Na<sub>2</sub>SO<sub>4</sub>","Na<sub>2</sub>SO<sub>3</sub>","K<sub>2</sub>SO<sub>4</sub>","CaSO<sub>4</sub>"], answer:"Na<sub>2</sub>SO<sub>4</sub>"},
+    {question:"Natrium sulfit", options:["Na<sub>2</sub>SO<sub>3</sub>","Na<sub>2</sub>SO<sub>4</sub>","K<sub>2</sub>SO<sub>3</sub>","CaSO<sub>3</sub>"], answer:"Na<sub>2</sub>SO<sub>3</sub>"},
+    {question:"Amonium klorida", options:["NH<sub>4</sub>Cl","NaCl","KCl","CaCl<sub>2</sub>"], answer:"NH<sub>4</sub>Cl"},
+    {question:"Amonium sulfat", options:["(NH<sub>4</sub>)<sub>2</sub>SO<sub>4</sub>","NH<sub>4</sub>SO<sub>4</sub>","Na<sub>2</sub>SO<sub>4</sub>","K<sub>2</sub>SO<sub>4</sub>"], answer:"(NH<sub>4</sub>)<sub>2</sub>SO<sub>4</sub>"},
+    {question:"Magnesium hidroksida", options:["Mg(OH)<sub>2</sub>","Ca(OH)<sub>2</sub>","NaOH","KOH"], answer:"Mg(OH)<sub>2</sub>"},
+    {question:"Aluminium klorida", options:["AlCl<sub>3</sub>","AlCl<sub>2</sub>","AlCl","Al<sub>2</sub>Cl<sub>3</sub>"], answer:"AlCl<sub>3</sub>"},
+    {question:"Besi(II) klorida", options:["FeCl<sub>2</sub>","FeCl<sub>3</sub>","FeCl","Fe<sub>2</sub>Cl<sub>3</sub>"], answer:"FeCl<sub>2</sub>"},
+    {question:"Besi(III) klorida", options:["FeCl<sub>3</sub>","FeCl<sub>2</sub>","FeCl","Fe<sub>2</sub>Cl<sub>3</sub>"], answer:"FeCl<sub>3</sub>"},
+    {question:"Tembaga(II) sulfat", options:["CuSO<sub>4</sub>","Cu<sub>2</sub>SO<sub>4</sub>","CuSO<sub>3</sub>","Cu<sub>2</sub>SO<sub>3</sub>"], answer:"CuSO<sub>4</sub>"},
+    {question:"Seng klorida", options:["ZnCl<sub>2</sub>","ZnCl","ZnCl<sub>3</sub>","Zn<sub>2</sub>Cl"], answer:"ZnCl<sub>2</sub>"},
+    {question:"Perak nitrat", options:["AgNO<sub>3</sub>","AgNO<sub>2</sub>","Ag<sub>2</sub>NO<sub>3</sub>","AgNO"], answer:"AgNO<sub>3</sub>"},
+    {question:"Timbal(II) klorida", options:["PbCl<sub>2</sub>","PbCl<sub>4</sub>","PbCl","Pb<sub>2</sub>Cl<sub>3</sub>"], answer:"PbCl<sub>2</sub>"},
+    {question:"Timbal(IV) klorida", options:["PbCl<sub>4</sub>","PbCl<sub>2</sub>","PbCl","Pb<sub>2</sub>Cl<sub>3</sub>"], answer:"PbCl<sub>4</sub>"},
+    {question:"Besi(II) sulfat", options:["FeSO<sub>4</sub>","Fe<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>","FeSO<sub>3</sub>","Fe<sub>2</sub>SO<sub>4</sub>"], answer:"FeSO<sub>4</sub>"},
+    {question:"Besi(III) sulfat", options:["Fe<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>","FeSO<sub>4</sub>","FeSO<sub>3</sub>","Fe<sub>2</sub>SO<sub>4</sub>"], answer:"Fe<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>"},
+    {question:"Natrium bikarbonat", options:["NaHCO<sub>3</sub>","Na<sub>2</sub>CO<sub>3</sub>","KHCO<sub>3</sub>","Ca(HCO<sub>3</sub>)<sub>2</sub>"], answer:"NaHCO<sub>3</sub>"},
+
+    {question:"Bilangan oksidasi O dalam H<sub>2</sub>O adalah?", options:["-2","-1","0","+2"], answer:"-2"},
+    {question:"Bilangan oksidasi H dalam H<sub>2</sub>O adalah?", options:["+1","-1","0","+2"], answer:"+1"},
+    {question:"Bilangan oksidasi Na dalam NaCl adalah?", options:["+1","-1","0","+2"], answer:"+1"},
+    {question:"Bilangan oksidasi Cl dalam NaCl adalah?", options:["-1","+1","0","+2"], answer:"-1"},
+    {question:"Bilangan oksidasi O dalam O<sub>2</sub> adalah?", options:["0","-2","+2","-1"], answer:"0"},
+
+    {question:"Bilangan oksidasi H dalam HCl adalah?", options:["+1","-1","0","+2"], answer:"+1"},
+    {question:"Bilangan oksidasi Cl dalam HCl adalah?", options:["-1","+1","0","+2"], answer:"-1"},
+    {question:"Bilangan oksidasi Mg dalam MgO adalah?", options:["+2","+1","0","-2"], answer:"+2"},
+    {question:"Bilangan oksidasi O dalam MgO adalah?", options:["-2","-1","0","+2"], answer:"-2"},
+    {question:"Bilangan oksidasi Al dalam Al<sub>2</sub>O<sub>3</sub> adalah?", options:["+3","+2","+1","0"], answer:"+3"},
+
+    {question:"Bilangan oksidasi O dalam H<sub>2</sub>O<sub>2</sub> adalah?", options:["-1","-2","0","+1"], answer:"-1"},
+    {question:"Bilangan oksidasi H dalam H<sub>2</sub>O<sub>2</sub> adalah?", options:["+1","-1","0","+2"], answer:"+1"},
+    {question:"Bilangan oksidasi N dalam NH<sub>3</sub> adalah?", options:["-3","+3","0","+5"], answer:"-3"},
+    {question:"Bilangan oksidasi N dalam NO adalah?", options:["+2","+1","-1","+3"], answer:"+2"},
+    {question:"Bilangan oksidasi N dalam NO<sub>2</sub> adalah?", options:["+4","+2","+3","+5"], answer:"+4"},
+
+    {question:"Bilangan oksidasi N dalam N<sub>2</sub> adalah?", options:["0","+1","-1","+2"], answer:"0"},
+    {question:"Bilangan oksidasi S dalam H<sub>2</sub>S adalah?", options:["-2","+2","0","+4"], answer:"-2"},
+    {question:"Bilangan oksidasi S dalam SO<sub>2</sub> adalah?", options:["+4","+2","+6","-2"], answer:"+4"},
+    {question:"Bilangan oksidasi S dalam SO<sub>3</sub> adalah?", options:["+6","+4","+2","-2"], answer:"+6"},
+    {question:"Bilangan oksidasi C dalam CO adalah?", options:["+2","+4","0","-2"], answer:"+2"},
+
+    {question:"Bilangan oksidasi C dalam CO<sub>2</sub> adalah?", options:["+4","+2","0","-4"], answer:"+4"},
+    {question:"Bilangan oksidasi C dalam CH<sub>4</sub> adalah?", options:["-4","+4","0","+2"], answer:"-4"},
+    {question:"Bilangan oksidasi Cl dalam Cl<sub>2</sub> adalah?", options:["0","+1","-1","+2"], answer:"0"},
+    {question:"Bilangan oksidasi Fe dalam FeCl<sub>3</sub> adalah?", options:["+3","+2","+1","0"], answer:"+3"},
+    {question:"Bilangan oksidasi Fe dalam FeCl<sub>2</sub> adalah?", options:["+2","+3","+1","0"], answer:"+2"},
+
+    {question:"Bilangan oksidasi Cu dalam CuO adalah?", options:["+2","+1","0","+3"], answer:"+2"},
+    {question:"Bilangan oksidasi Cu dalam Cu<sub>2</sub>O adalah?", options:["+1","+2","0","+3"], answer:"+1"},
+    {question:"Bilangan oksidasi Zn dalam ZnCl<sub>2</sub> adalah?", options:["+2","+1","0","+3"], answer:"+2"},
+    {question:"Bilangan oksidasi Ag dalam AgCl adalah?", options:["+1","+2","0","+3"], answer:"+1"},
+    {question:"Bilangan oksidasi Pb dalam PbCl<sub>2</sub> adalah?", options:["+2","+4","+1","0"], answer:"+2"},
+
+    {question:"Bilangan oksidasi Pb dalam PbCl<sub>4</sub> adalah?", options:["+4","+2","+1","0"], answer:"+4"},
+    {question:"Bilangan oksidasi N dalam NO<sub>3</sub><sup>-</sup> adalah?", options:["+5","+3","+4","+2"], answer:"+5"},
+    {question:"Bilangan oksidasi N dalam NO<sub>2</sub><sup>-</sup> adalah?", options:["+3","+5","+4","+2"], answer:"+3"},
+    {question:"Bilangan oksidasi S dalam SO<sub>4</sub><sup>2-</sup> adalah?", options:["+6","+4","+2","-2"], answer:"+6"},
+    {question:"Bilangan oksidasi S dalam SO<sub>3</sub><sup>2-</sup> adalah?", options:["+4","+6","+2","-2"], answer:"+4"},
+
+    {question:"Bilangan oksidasi C dalam CO<sub>3</sub><sup>2-</sup> adalah?", options:["+4","+2","+3","-4"], answer:"+4"},
+    {question:"Bilangan oksidasi P dalam PO<sub>4</sub><sup>3-</sup> adalah?", options:["+5","+3","+4","+2"], answer:"+5"},
+    {question:"Bilangan oksidasi Cl dalam ClO<sup>-</sup> adalah?", options:["+1","+3","+5","+7"], answer:"+1"},
+    {question:"Bilangan oksidasi Cl dalam ClO<sub>3</sub><sup>-</sup> adalah?", options:["+5","+3","+1","+7"], answer:"+5"},
+    {question:"Bilangan oksidasi Cl dalam ClO<sub>4</sub><sup>-</sup> adalah?", options:["+7","+5","+3","+1"], answer:"+7"},
+
+    {question:"Bilangan oksidasi Mn dalam MnO<sub>4</sub><sup>-</sup> adalah?", options:["+7","+6","+4","+2"], answer:"+7"},
+    {question:"Bilangan oksidasi Mn dalam MnO<sub>4</sub><sup>2-</sup> adalah?", options:["+6","+7","+4","+2"], answer:"+6"},
+    {question:"Bilangan oksidasi Cr dalam CrO<sub>4</sub><sup>2-</sup> adalah?", options:["+6","+3","+4","+2"], answer:"+6"},
+    {question:"Bilangan oksidasi Cr dalam Cr<sub>2</sub>O<sub>7</sub><sup>2-</sup> adalah?", options:["+6","+3","+4","+2"], answer:"+6"},
+    {question:"Bilangan oksidasi S dalam S<sub>2</sub>O<sub>3</sub><sup>2-</sup> (rata-rata) adalah?", options:["+2","+4","+6","0"], answer:"+2"},
+
+    {question:"Bilangan oksidasi C dalam HCOOH adalah?", options:["+2","+4","0","-2"], answer:"+2"},
+    {question:"Bilangan oksidasi C dalam CH<sub>3</sub>COOH (C karboksil) adalah?", options:["+3","+4","+2","0"], answer:"+3"},
+    {question:"Bilangan oksidasi O dalam OF<sub>2</sub> adalah?", options:["+2","-2","0","-1"], answer:"+2"},
+    {question:"Bilangan oksidasi F dalam OF<sub>2</sub> adalah?", options:["-1","+1","0","+2"], answer:"-1"},
+    {question:"Bilangan oksidasi H dalam NaH adalah?", options:["-1","+1","0","+2"], answer:"-1"}
+
+  ],
+
+  reaksi: [
+
+    {question:"CH<sub>4</sub> + 2O<sub>2</sub> → CO<sub>2</sub> + 2H<sub>2</sub>O", options:["Pembakaran","Pembentukan basa","Pengendapan","Perkaratan"], answer:"Pembakaran"},
+    {question:"2Mg + O<sub>2</sub> → 2MgO", options:["Pembentukan oksida","Pembakaran","Pembentukan garam","Pembentukan basa"], answer:"Pembentukan oksida"},
+    {question:"HCl + NaOH → NaCl + H<sub>2</sub>O", options:["Pembentukan garam","Pembakaran","Pengendapan","Pembentukan gas"], answer:"Pembentukan garam"},
+    {question:"2H<sub>2</sub> + O<sub>2</sub> → 2H<sub>2</sub>O", options:["Pembentukan asam","Pembakaran","Pembentukan basa","Pengendapan"], answer:"Pembentukan asam"},
+    {question:"Na<sub>2</sub>SO<sub>4</sub> + BaCl<sub>2</sub> → BaSO<sub>4</sub>↓ + 2NaCl", options:["Pengendapan","Pembentukan gas","Pembakaran","Perkaratan"], answer:"Pengendapan"},
+
+    {question:"4Fe + 3O<sub>2</sub> → 2Fe<sub>2</sub>O<sub>3</sub>", options:["Perkaratan","Pembakaran","Pembentukan gas","Pengendapan"], answer:"Perkaratan"},
+    {question:"Zn + 2HCl → ZnCl<sub>2</sub> + H<sub>2</sub>↑", options:["Pembentukan gas","Pembakaran","Pembentukan oksida","Pengendapan"], answer:"Pembentukan gas"},
+    {question:"SO<sub>3</sub> + H<sub>2</sub>O → H<sub>2</sub>SO<sub>4</sub>", options:["Pembentukan asam","Pembentukan basa","Pembakaran","Pengendapan"], answer:"Pembentukan asam"},
+    {question:"CaO + H<sub>2</sub>O → Ca(OH)<sub>2</sub>", options:["Pembentukan basa","Pembentukan asam","Pembakaran","Pengendapan"], answer:"Pembentukan basa"},
+    {question:"C + O<sub>2</sub> → CO<sub>2</sub>", options:["Pembakaran","Pembentukan oksida","Pengendapan","Perkaratan"], answer:"Pembakaran"},
+
+    {question:"2K + Cl<sub>2</sub> → 2KCl", options:["Pembentukan garam","Pembakaran","Pembentukan basa","Pengendapan"], answer:"Pembentukan garam"},
+    {question:"AgNO<sub>3</sub> + NaCl → AgCl↓ + NaNO<sub>3</sub>", options:["Pengendapan","Pembentukan gas","Pembakaran","Perkaratan"], answer:"Pengendapan"},
+    {question:"Fe + 2HCl → FeCl<sub>2</sub> + H<sub>2</sub>↑", options:["Pembentukan gas","Pembakaran","Pengendapan","Pembentukan basa"], answer:"Pembentukan gas"},
+    {question:"2H<sub>2</sub>S + 3O<sub>2</sub> → 2SO<sub>2</sub> + 2H<sub>2</sub>O", options:["Pembakaran","Pembentukan oksida","Pengendapan","Perkaratan"], answer:"Pembakaran"},
+    {question:"N<sub>2</sub>O<sub>5</sub> + H<sub>2</sub>O → 2HNO<sub>3</sub>", options:["Pembentukan asam","Pembentukan basa","Pembakaran","Pengendapan"], answer:"Pembentukan asam"},
+
+    {question:"Na<sub>2</sub>O + H<sub>2</sub>O → 2NaOH", options:["Pembentukan basa","Pembakaran","Pengendapan","Pembentukan gas"], answer:"Pembentukan basa"},
+    {question:"2Al + 3O<sub>2</sub> → Al<sub>2</sub>O<sub>3</sub>", options:["Pembentukan oksida","Pembakaran","Pengendapan","Perkaratan"], answer:"Pembentukan oksida"},
+    {question:"CuSO<sub>4</sub> + 2NaOH → Cu(OH)<sub>2</sub>↓ + Na<sub>2</sub>SO<sub>4</sub>", options:["Pengendapan","Pembakaran","Pembentukan gas","Perkaratan"], answer:"Pengendapan"},
+    {question:"CaCO<sub>3</sub> + 2HCl → CaCl<sub>2</sub> + CO<sub>2</sub>↑ + H<sub>2</sub>O", options:["Pembentukan gas","Pengendapan","Pembakaran","Pembentukan basa"], answer:"Pembentukan gas"},
+    {question:"Fe + O<sub>2</sub> + H<sub>2</sub>O → karat", options:["Perkaratan","Pembakaran","Pengendapan","Pembentukan gas"], answer:"Perkaratan"},
+
+    {question:"2SO<sub>2</sub> + O<sub>2</sub> → 2SO<sub>3</sub>", options:["Pembentukan oksida","Pembakaran","Pengendapan","Pembentukan basa"], answer:"Pembentukan oksida"},
+    {question:"H<sub>2</sub> + Cl<sub>2</sub> → 2HCl", options:["Pembentukan asam","Pembakaran","Pengendapan","Pembentukan basa"], answer:"Pembentukan asam"},
+    {question:"NH<sub>3</sub> + HCl → NH<sub>4</sub>Cl", options:["Pembentukan garam","Pembakaran","Pengendapan","Perkaratan"], answer:"Pembentukan garam"},
+    {question:"BaCl<sub>2</sub> + Na<sub>2</sub>CO<sub>3</sub> → BaCO<sub>3</sub>↓ + 2NaCl", options:["Pengendapan","Pembakaran","Pembentukan gas","Perkaratan"], answer:"Pengendapan"},
+    {question:"Zn + H<sub>2</sub>SO<sub>4</sub> → ZnSO<sub>4</sub> + H<sub>2</sub>↑", options:["Pembentukan gas","Pembakaran","Pengendapan","Pembentukan basa"], answer:"Pembentukan gas"},
+
+    {question:"C<sub>2</sub>H<sub>6</sub> + O<sub>2</sub> → CO<sub>2</sub> + H<sub>2</sub>O", options:["Pembakaran","Pembentukan oksida","Pengendapan","Perkaratan"], answer:"Pembakaran"},
+    {question:"MgO + H<sub>2</sub>O → Mg(OH)<sub>2</sub>", options:["Pembentukan basa","Pembakaran","Pengendapan","Pembentukan gas"], answer:"Pembentukan basa"},
+    {question:"CO<sub>2</sub> + H<sub>2</sub>O → H<sub>2</sub>CO<sub>3</sub>", options:["Pembentukan asam","Pembakaran","Pengendapan","Perkaratan"], answer:"Pembentukan asam"},
+    {question:"NaOH + HNO<sub>3</sub> → NaNO<sub>3</sub> + H<sub>2</sub>O", options:["Pembentukan garam","Pembakaran","Pengendapan","Pembentukan gas"], answer:"Pembentukan garam"},
+    {question:"4Fe + 3O<sub>2</sub> → 2Fe<sub>2</sub>O<sub>3</sub>", options:["Perkaratan","Pembakaran","Pengendapan","Pembentukan gas"], answer:"Perkaratan"},
+
+    {question:"2CO + O<sub>2</sub> → 2CO<sub>2</sub>", options:["Pembakaran","Pembentukan oksida","Pengendapan","Perkaratan"], answer:"Pembakaran"},
+    {question:"Al + O<sub>2</sub> → Al<sub>2</sub>O<sub>3</sub>", options:["Pembentukan oksida","Pembakaran","Pengendapan","Pembentukan basa"], answer:"Pembentukan oksida"},
+    {question:"H<sub>2</sub>SO<sub>4</sub> + 2KOH → K<sub>2</sub>SO<sub>4</sub> + 2H<sub>2</sub>O", options:["Pembentukan garam","Pembakaran","Pengendapan","Pembentukan gas"], answer:"Pembentukan garam"},
+    {question:"Na<sub>2</sub>S + 2HCl → 2NaCl + H<sub>2</sub>S↑", options:["Pembentukan gas","Pembakaran","Pengendapan","Perkaratan"], answer:"Pembentukan gas"},
+    {question:"AgNO<sub>3</sub> + KBr → AgBr↓ + KNO<sub>3</sub>", options:["Pengendapan","Pembakaran","Pembentukan gas","Perkaratan"], answer:"Pengendapan"},
+
+    {question:"CH<sub>4</sub>", options:["Metana","Etana","Propana","Butana"], answer:"Metana"},
+    {question:"C<sub>2</sub>H<sub>6</sub>", options:["Etana","Metana","Propana","Butana"], answer:"Etana"},
+    {question:"C<sub>3</sub>H<sub>8</sub>", options:["Propana","Etana","Butana","Pentana"], answer:"Propana"},
+    {question:"C<sub>4</sub>H<sub>10</sub>", options:["Butana","Propana","Pentana","Heksana"], answer:"Butana"},
+    {question:"C<sub>5</sub>H<sub>12</sub>", options:["Pentana","Butana","Heksana","Heptana"], answer:"Pentana"},
+    {question:"C<sub>6</sub>H<sub>14</sub>", options:["Heksana","Pentana","Heptana","Oktana"], answer:"Heksana"},
+    {question:"C<sub>7</sub>H<sub>16</sub>", options:["Heptana","Heksana","Oktana","Nonana"], answer:"Heptana"},
+    {question:"C<sub>8</sub>H<sub>18</sub>", options:["Oktana","Heptana","Nonana","Dekana"], answer:"Oktana"},
+    {question:"C<sub>9</sub>H<sub>20</sub>", options:["Nonana","Oktana","Dekana","Undekana"], answer:"Nonana"},
+    {question:"C<sub>10</sub>H<sub>22</sub>", options:["Dekana","Nonana","Undekana","Dodekana"], answer:"Dekana"},
+    {question:"C<sub>11</sub>H<sub>24</sub>", options:["Undekana","Dekana","Dodekana","Tridekana"], answer:"Undekana"},
+    {question:"C<sub>12</sub>H<sub>26</sub>", options:["Dodekana","Undekana","Tridekana","Tetradekana"], answer:"Dodekana"},
+    {question:"C<sub>13</sub>H<sub>28</sub>", options:["Tridekana","Dodekana","Tetradekana","Pentadekana"], answer:"Tridekana"},
+    {question:"C<sub>14</sub>H<sub>30</sub>", options:["Tetradekana","Tridekana","Pentadekana","Heksadekana"], answer:"Tetradekana"},
+    {question:"C<sub>15</sub>H<sub>32</sub>", options:["Pentadekana","Tetradekana","Heksadekana","Heptadekana"], answer:"Pentadekana"},
+
+    /* ================= ALKENA (RUMUS → NAMA) ================= */
+
+    {question:"C<sub>2</sub>H<sub>4</sub>", options:["Etena","Etana","Propana","Butena"], answer:"Etena"},
+    {question:"C<sub>3</sub>H<sub>6</sub>", options:["Propena","Propana","Butena","Pentena"], answer:"Propena"},
+    {question:"C<sub>4</sub>H<sub>8</sub>", options:["Butena","Propena","Pentena","Heksena"], answer:"Butena"},
+    {question:"C<sub>5</sub>H<sub>10</sub>", options:["Pentena","Butena","Heksena","Heptena"], answer:"Pentena"},
+    {question:"C<sub>6</sub>H<sub>12</sub>", options:["Heksena","Pentena","Heptena","Oktena"], answer:"Heksena"},
+    {question:"C<sub>7</sub>H<sub>14</sub>", options:["Heptena","Heksena","Oktena","Nonena"], answer:"Heptena"},
+    {question:"C<sub>8</sub>H<sub>16</sub>", options:["Oktena","Heptena","Nonena","Dekena"], answer:"Oktena"},
+    {question:"C<sub>9</sub>H<sub>18</sub>", options:["Nonena","Oktena","Dekena","Undekena"], answer:"Nonena"},
+    {question:"C<sub>10</sub>H<sub>20</sub>", options:["Dekena","Nonena","Undekena","Dodekena"], answer:"Dekena"},
+    {question:"C<sub>11</sub>H<sub>22</sub>", options:["Undekena","Dekena","Dodekena","Tridekena"], answer:"Undekena"},
+    {question:"C<sub>12</sub>H<sub>24</sub>", options:["Dodekena","Undekena","Tridekena","Tetradekena"], answer:"Dodekena"},
+    {question:"C<sub>13</sub>H<sub>26</sub>", options:["Tridekena","Dodekena","Tetradekena","Pentadekena"], answer:"Tridekena"},
+    {question:"C<sub>14</sub>H<sub>28</sub>", options:["Tetradekena","Tridekena","Pentadekena","Heksadekena"], answer:"Tetradekena"},
+    {question:"C<sub>15</sub>H<sub>30</sub>", options:["Pentadekena","Tetradekena","Heksadekena","Heptadekena"], answer:"Pentadekena"},
+    {question:"C<sub>16</sub>H<sub>32</sub>", options:["Heksadekena","Pentadekena","Heptadekena","Oktadekena"], answer:"Heksadekena"},
+
+    /* ================= ALKUNA (RUMUS → NAMA) ================= */
+
+    {question:"C<sub>2</sub>H<sub>2</sub>", options:["Etuna","Etena","Etana","Propuna"], answer:"Etuna"},
+    {question:"C<sub>3</sub>H<sub>4</sub>", options:["Propuna","Propena","Propana","Butuna"], answer:"Propuna"},
+    {question:"C<sub>4</sub>H<sub>6</sub>", options:["Butuna","Butena","Butana","Pentuna"], answer:"Butuna"},
+    {question:"C<sub>5</sub>H<sub>8</sub>", options:["Pentuna","Pentena","Pentana","Heksuna"], answer:"Pentuna"},
+    {question:"C<sub>6</sub>H<sub>10</sub>", options:["Heksuna","Heksena","Heksana","Heptuna"], answer:"Heksuna"},
+    {question:"C<sub>7</sub>H<sub>12</sub>", options:["Heptuna","Heptena","Heptana","Oktuna"], answer:"Heptuna"},
+    {question:"C<sub>8</sub>H<sub>14</sub>", options:["Oktuna","Oktena","Oktana","Nonuna"], answer:"Oktuna"},
+    {question:"C<sub>9</sub>H<sub>16</sub>", options:["Nonuna","Nonena","Nonana","Dekuna"], answer:"Nonuna"},
+    {question:"C<sub>10</sub>H<sub>18</sub>", options:["Dekuna","Dekena","Dekana","Undekuna"], answer:"Dekuna"},
+    {question:"C<sub>11</sub>H<sub>20</sub>", options:["Undekuna","Undekena","Undekana","Dodekuna"], answer:"Undekuna"},
+    {question:"C<sub>12</sub>H<sub>22</sub>", options:["Dodekuna","Dodekena","Dodekana","Tridekuna"], answer:"Dodekuna"},
+    {question:"C<sub>13</sub>H<sub>24</sub>", options:["Tridekuna","Tridekena","Tridekana","Tetradekuna"], answer:"Tridekuna"},
+    {question:"C<sub>14</sub>H<sub>26</sub>", options:["Tetradekuna","Tetradekena","Tetradekana","Pentadekuna"], answer:"Tetradekuna"},
+    {question:"C<sub>15</sub>H<sub>28</sub>", options:["Pentadekuna","Pentadekena","Pentadekana","Heksadekuna"], answer:"Pentadekuna"},
+    {question:"C<sub>16</sub>H<sub>30</sub>", options:["Heksadekuna","Heksadekena","Heksadekana","Heptadekuna"], answer:"Heksadekuna"},
+
+    {question:"Metana", options:["CH<sub>4</sub>","C<sub>2</sub>H<sub>6</sub>","C<sub>3</sub>H<sub>8</sub>","C<sub>4</sub>H<sub>10</sub>"], answer:"CH<sub>4</sub>"},
+    {question:"Etana", options:["C<sub>2</sub>H<sub>6</sub>","CH<sub>4</sub>","C<sub>3</sub>H<sub>8</sub>","C<sub>4</sub>H<sub>10</sub>"], answer:"C<sub>2</sub>H<sub>6</sub>"},
+    {question:"Propana", options:["C<sub>3</sub>H<sub>8</sub>","C<sub>2</sub>H<sub>6</sub>","C<sub>4</sub>H<sub>10</sub>","C<sub>5</sub>H<sub>12</sub>"], answer:"C<sub>3</sub>H<sub>8</sub>"},
+    {question:"Butana", options:["C<sub>4</sub>H<sub>10</sub>","C<sub>3</sub>H<sub>8</sub>","C<sub>5</sub>H<sub>12</sub>","C<sub>6</sub>H<sub>14</sub>"], answer:"C<sub>4</sub>H<sub>10</sub>"},
+    {question:"Pentana", options:["C<sub>5</sub>H<sub>12</sub>","C<sub>4</sub>H<sub>10</sub>","C<sub>6</sub>H<sub>14</sub>","C<sub>7</sub>H<sub>16</sub>"], answer:"C<sub>5</sub>H<sub>12</sub>"},
+    {question:"Heksana", options:["C<sub>6</sub>H<sub>14</sub>","C<sub>5</sub>H<sub>12</sub>","C<sub>7</sub>H<sub>16</sub>","C<sub>8</sub>H<sub>18</sub>"], answer:"C<sub>6</sub>H<sub>14</sub>"},
+    {question:"Heptana", options:["C<sub>7</sub>H<sub>16</sub>","C<sub>6</sub>H<sub>14</sub>","C<sub>8</sub>H<sub>18</sub>","C<sub>9</sub>H<sub>20</sub>"], answer:"C<sub>7</sub>H<sub>16</sub>"},
+    {question:"Oktana", options:["C<sub>8</sub>H<sub>18</sub>","C<sub>7</sub>H<sub>16</sub>","C<sub>9</sub>H<sub>20</sub>","C<sub>10</sub>H<sub>22</sub>"], answer:"C<sub>8</sub>H<sub>18</sub>"},
+    {question:"Nonana", options:["C<sub>9</sub>H<sub>20</sub>","C<sub>8</sub>H<sub>18</sub>","C<sub>10</sub>H<sub>22</sub>","C<sub>11</sub>H<sub>24</sub>"], answer:"C<sub>9</sub>H<sub>20</sub>"},
+    {question:"Dekana", options:["C<sub>10</sub>H<sub>22</sub>","C<sub>9</sub>H<sub>20</sub>","C<sub>11</sub>H<sub>24</sub>","C<sub>12</sub>H<sub>26</sub>"], answer:"C<sub>10</sub>H<sub>22</sub>"},
+    {question:"Undekana", options:["C<sub>11</sub>H<sub>24</sub>","C<sub>10</sub>H<sub>22</sub>","C<sub>12</sub>H<sub>26</sub>","C<sub>13</sub>H<sub>28</sub>"], answer:"C<sub>11</sub>H<sub>24</sub>"},
+    {question:"Dodekana", options:["C<sub>12</sub>H<sub>26</sub>","C<sub>11</sub>H<sub>24</sub>","C<sub>13</sub>H<sub>28</sub>","C<sub>14</sub>H<sub>30</sub>"], answer:"C<sub>12</sub>H<sub>26</sub>"},
+    {question:"Tridekana", options:["C<sub>13</sub>H<sub>28</sub>","C<sub>12</sub>H<sub>26</sub>","C<sub>14</sub>H<sub>30</sub>","C<sub>15</sub>H<sub>32</sub>"], answer:"C<sub>13</sub>H<sub>28</sub>"},
+    {question:"Tetradekana", options:["C<sub>14</sub>H<sub>30</sub>","C<sub>13</sub>H<sub>28</sub>","C<sub>15</sub>H<sub>32</sub>","C<sub>16</sub>H<sub>34</sub>"], answer:"C<sub>14</sub>H<sub>30</sub>"},
+    {question:"Pentadekana", options:["C<sub>15</sub>H<sub>32</sub>","C<sub>14</sub>H<sub>30</sub>","C<sub>16</sub>H<sub>34</sub>","C<sub>17</sub>H<sub>36</sub>"], answer:"C<sub>15</sub>H<sub>32</sub>"},
+
+    /* ================= ALKENA (15) ================= */
+
+    {question:"Etena", options:["C<sub>2</sub>H<sub>4</sub>","C<sub>2</sub>H<sub>6</sub>","C<sub>3</sub>H<sub>6</sub>","C<sub>4</sub>H<sub>8</sub>"], answer:"C<sub>2</sub>H<sub>4</sub>"},
+    {question:"Propena", options:["C<sub>3</sub>H<sub>6</sub>","C<sub>3</sub>H<sub>8</sub>","C<sub>4</sub>H<sub>8</sub>","C<sub>5</sub>H<sub>10</sub>"], answer:"C<sub>3</sub>H<sub>6</sub>"},
+    {question:"Butena", options:["C<sub>4</sub>H<sub>8</sub>","C<sub>4</sub>H<sub>10</sub>","C<sub>5</sub>H<sub>10</sub>","C<sub>6</sub>H<sub>12</sub>"], answer:"C<sub>4</sub>H<sub>8</sub>"},
+    {question:"Pentena", options:["C<sub>5</sub>H<sub>10</sub>","C<sub>5</sub>H<sub>12</sub>","C<sub>6</sub>H<sub>12</sub>","C<sub>7</sub>H<sub>14</sub>"], answer:"C<sub>5</sub>H<sub>10</sub>"},
+    {question:"Heksena", options:["C<sub>6</sub>H<sub>12</sub>","C<sub>6</sub>H<sub>14</sub>","C<sub>7</sub>H<sub>14</sub>","C<sub>8</sub>H<sub>16</sub>"], answer:"C<sub>6</sub>H<sub>12</sub>"},
+    {question:"Heptena", options:["C<sub>7</sub>H<sub>14</sub>","C<sub>7</sub>H<sub>16</sub>","C<sub>8</sub>H<sub>16</sub>","C<sub>9</sub>H<sub>18</sub>"], answer:"C<sub>7</sub>H<sub>14</sub>"},
+    {question:"Oktena", options:["C<sub>8</sub>H<sub>16</sub>","C<sub>8</sub>H<sub>18</sub>","C<sub>9</sub>H<sub>18</sub>","C<sub>10</sub>H<sub>20</sub>"], answer:"C<sub>8</sub>H<sub>16</sub>"},
+    {question:"Nonena", options:["C<sub>9</sub>H<sub>18</sub>","C<sub>9</sub>H<sub>20</sub>","C<sub>10</sub>H<sub>20</sub>","C<sub>11</sub>H<sub>22</sub>"], answer:"C<sub>9</sub>H<sub>18</sub>"},
+    {question:"Dekena", options:["C<sub>10</sub>H<sub>20</sub>","C<sub>10</sub>H<sub>22</sub>","C<sub>11</sub>H<sub>22</sub>","C<sub>12</sub>H<sub>24</sub>"], answer:"C<sub>10</sub>H<sub>20</sub>"},
+    {question:"Undekena", options:["C<sub>11</sub>H<sub>22</sub>","C<sub>11</sub>H<sub>24</sub>","C<sub>12</sub>H<sub>24</sub>","C<sub>13</sub>H<sub>26</sub>"], answer:"C<sub>11</sub>H<sub>22</sub>"},
+    {question:"Dodekena", options:["C<sub>12</sub>H<sub>24</sub>","C<sub>12</sub>H<sub>26</sub>","C<sub>13</sub>H<sub>26</sub>","C<sub>14</sub>H<sub>28</sub>"], answer:"C<sub>12</sub>H<sub>24</sub>"},
+    {question:"Tridekena", options:["C<sub>13</sub>H<sub>26</sub>","C<sub>13</sub>H<sub>28</sub>","C<sub>14</sub>H<sub>28</sub>","C<sub>15</sub>H<sub>30</sub>"], answer:"C<sub>13</sub>H<sub>26</sub>"},
+    {question:"Tetradekena", options:["C<sub>14</sub>H<sub>28</sub>","C<sub>14</sub>H<sub>30</sub>","C<sub>15</sub>H<sub>30</sub>","C<sub>16</sub>H<sub>32</sub>"], answer:"C<sub>14</sub>H<sub>28</sub>"},
+    {question:"Pentadekena", options:["C<sub>15</sub>H<sub>30</sub>","C<sub>15</sub>H<sub>32</sub>","C<sub>16</sub>H<sub>32</sub>","C<sub>17</sub>H<sub>34</sub>"], answer:"C<sub>15</sub>H<sub>30</sub>"},
+    {question:"Heksadekena", options:["C<sub>16</sub>H<sub>32</sub>","C<sub>16</sub>H<sub>34</sub>","C<sub>17</sub>H<sub>34</sub>","C<sub>18</sub>H<sub>36</sub>"], answer:"C<sub>16</sub>H<sub>32</sub>"},
+
+    /* ================= ALKUNA (15) ================= */
+
+    {question:"Etuna", options:["C<sub>2</sub>H<sub>2</sub>","C<sub>2</sub>H<sub>4</sub>","C<sub>3</sub>H<sub>4</sub>","C<sub>4</sub>H<sub>6</sub>"], answer:"C<sub>2</sub>H<sub>2</sub>"},
+    {question:"Propuna", options:["C<sub>3</sub>H<sub>4</sub>","C<sub>3</sub>H<sub>6</sub>","C<sub>4</sub>H<sub>6</sub>","C<sub>5</sub>H<sub>8</sub>"], answer:"C<sub>3</sub>H<sub>4</sub>"},
+    {question:"Butuna", options:["C<sub>4</sub>H<sub>6</sub>","C<sub>4</sub>H<sub>8</sub>","C<sub>5</sub>H<sub>8</sub>","C<sub>6</sub>H<sub>10</sub>"], answer:"C<sub>4</sub>H<sub>6</sub>"},
+    {question:"Pentuna", options:["C<sub>5</sub>H<sub>8</sub>","C<sub>5</sub>H<sub>10</sub>","C<sub>6</sub>H<sub>10</sub>","C<sub>7</sub>H<sub>12</sub>"], answer:"C<sub>5</sub>H<sub>8</sub>"},
+    {question:"Heksuna", options:["C<sub>6</sub>H<sub>10</sub>","C<sub>6</sub>H<sub>12</sub>","C<sub>7</sub>H<sub>12</sub>","C<sub>8</sub>H<sub>14</sub>"], answer:"C<sub>6</sub>H<sub>10</sub>"},
+    {question:"Heptuna", options:["C<sub>7</sub>H<sub>12</sub>","C<sub>7</sub>H<sub>14</sub>","C<sub>8</sub>H<sub>14</sub>","C<sub>9</sub>H<sub>16</sub>"], answer:"C<sub>7</sub>H<sub>12</sub>"},
+    {question:"Oktuna", options:["C<sub>8</sub>H<sub>14</sub>","C<sub>8</sub>H<sub>16</sub>","C<sub>9</sub>H<sub>16</sub>","C<sub>10</sub>H<sub>18</sub>"], answer:"C<sub>8</sub>H<sub>14</sub>"},
+    {question:"Nonuna", options:["C<sub>9</sub>H<sub>16</sub>","C<sub>9</sub>H<sub>18</sub>","C<sub>10</sub>H<sub>18</sub>","C<sub>11</sub>H<sub>20</sub>"], answer:"C<sub>9</sub>H<sub>16</sub>"},
+    {question:"Dekuna", options:["C<sub>10</sub>H<sub>18</sub>","C<sub>10</sub>H<sub>20</sub>","C<sub>11</sub>H<sub>20</sub>","C<sub>12</sub>H<sub>22</sub>"], answer:"C<sub>10</sub>H<sub>18</sub>"},
+    {question:"Undekuna", options:["C<sub>11</sub>H<sub>20</sub>","C<sub>11</sub>H<sub>22</sub>","C<sub>12</sub>H<sub>22</sub>","C<sub>13</sub>H<sub>24</sub>"], answer:"C<sub>11</sub>H<sub>20</sub>"},
+    {question:"Dodekuna", options:["C<sub>12</sub>H<sub>22</sub>","C<sub>12</sub>H<sub>24</sub>","C<sub>13</sub>H<sub>24</sub>","C<sub>14</sub>H<sub>26</sub>"], answer:"C<sub>12</sub>H<sub>22</sub>"},
+    {question:"Tridekuna", options:["C<sub>13</sub>H<sub>24</sub>","C<sub>13</sub>H<sub>26</sub>","C<sub>14</sub>H<sub>26</sub>","C<sub>15</sub>H<sub>28</sub>"], answer:"C<sub>13</sub>H<sub>24</sub>"},
+    {question:"Tetradekuna", options:["C<sub>14</sub>H<sub>26</sub>","C<sub>14</sub>H<sub>28</sub>","C<sub>15</sub>H<sub>28</sub>","C<sub>16</sub>H<sub>30</sub>"], answer:"C<sub>14</sub>H<sub>26</sub>"},
+    {question:"Pentadekuna", options:["C<sub>15</sub>H<sub>28</sub>","C<sub>15</sub>H<sub>30</sub>","C<sub>16</sub>H<sub>30</sub>","C<sub>17</sub>H<sub>32</sub>"], answer:"C<sub>15</sub>H<sub>28</sub>"},
+    {question:"Heksadekuna", options:["C<sub>16</sub>H<sub>30</sub>","C<sub>16</sub>H<sub>32</sub>","C<sub>17</sub>H<sub>32</sub>","C<sub>18</sub>H<sub>34</sub>"], answer:"C<sub>16</sub>H<sub>30</sub>"}
+  ],
+
+  stoikiometri: [
+
+    {question:"Massa zat sebelum dan sesudah reaksi tetap disebut hukum?", options:["Lavoisier","Proust","Dalton","Avogadro"], answer:"Lavoisier"},
+    {question:"Tokoh penemu hukum kekekalan massa adalah?", options:["Lavoisier","Dalton","Proust","Gay-Lussac"], answer:"Lavoisier"},
+    {question:"Jika massa pereaksi 12 g, maka massa hasil reaksi?", options:["12 g","6 g","24 g","0 g"], answer:"12 g"},
+
+    {question:"Perbandingan massa unsur dalam senyawa selalu tetap disebut hukum?", options:["Proust","Lavoisier","Dalton","Avogadro"], answer:"Proust"},
+    {question:"Air selalu tersusun dari H dan O dengan perbandingan tetap menunjukkan hukum?", options:["Proust","Dalton","Lavoisier","Gay-Lussac"], answer:"Proust"},
+    {question:"Tokoh hukum perbandingan tetap adalah?", options:["Proust","Dalton","Lavoisier","Avogadro"], answer:"Proust"},
+
+    {question:"Jika dua unsur membentuk lebih dari satu senyawa, perbandingannya bilangan bulat sederhana disebut hukum?", options:["Dalton","Proust","Lavoisier","Avogadro"], answer:"Dalton"},
+    {question:"CO dan CO2 merupakan contoh hukum?", options:["Dalton","Proust","Lavoisier","Gay-Lussac"], answer:"Dalton"},
+    {question:"Tokoh hukum perbandingan berganda adalah?", options:["Dalton","Proust","Lavoisier","Avogadro"], answer:"Dalton"},
+
+    {question:"Perbandingan volume gas sederhana dalam reaksi disebut hukum?", options:["Gay-Lussac","Dalton","Proust","Lavoisier"], answer:"Gay-Lussac"},
+    {question:"Reaksi 2H2 + O2 → 2H2O menunjukkan perbandingan volume 2:1 adalah hukum?", options:["Gay-Lussac","Dalton","Proust","Lavoisier"], answer:"Gay-Lussac"},
+    {question:"Tokoh hukum perbandingan volume adalah?", options:["Gay-Lussac","Dalton","Proust","Avogadro"], answer:"Gay-Lussac"},
+
+    {question:"Jumlah molekul gas ditentukan oleh volume disebut hukum?", options:["Avogadro","Dalton","Proust","Lavoisier"], answer:"Avogadro"},
+    {question:"Volume sama, jumlah molekul sama adalah hukum?", options:["Avogadro","Dalton","Proust","Gay-Lussac"], answer:"Avogadro"},
+    {question:"Tokoh hukum Avogadro adalah?", options:["Avogadro","Dalton","Proust","Lavoisier"], answer:"Avogadro"},
+
+    {question:"Jika massa produk lebih kecil dari pereaksi, maka?", options:["Data salah","Benar","Reaksi selesai","Hukum berlaku"], answer:"Data salah"},
+    {question:"Jika massa produk lebih besar dari pereaksi, maka?", options:["Data salah","Benar","Reaksi selesai","Hukum berlaku"], answer:"Data salah"},
+
+    {question:"Senyawa selalu memiliki komposisi tetap menunjukkan hukum?", options:["Proust","Dalton","Lavoisier","Avogadro"], answer:"Proust"},
+    {question:"Gas dengan volume sama dan kondisi sama memiliki jumlah partikel sama adalah hukum?", options:["Avogadro","Dalton","Proust","Gay-Lussac"], answer:"Avogadro"},
+
+    {question:"Massa tidak dapat diciptakan atau dimusnahkan adalah hukum?", options:["Lavoisier","Dalton","Proust","Avogadro"], answer:"Lavoisier"},
+    {question:"Perbandingan volume gas sederhana adalah hukum?", options:["Gay-Lussac","Dalton","Proust","Lavoisier"], answer:"Gay-Lussac"},
+
+    {question:"CO dan CO2 memiliki perbandingan massa berbeda menunjukkan hukum?", options:["Dalton","Proust","Lavoisier","Avogadro"], answer:"Dalton"},
+    {question:"Jika unsur bergabung dengan perbandingan tetap, itu hukum?", options:["Proust","Dalton","Lavoisier","Avogadro"], answer:"Proust"},
+
+    {question:"2 liter H2 bereaksi dengan 1 liter O2 adalah hukum?", options:["Gay-Lussac","Dalton","Proust","Lavoisier"], answer:"Gay-Lussac"},
+    {question:"1 mol gas memiliki jumlah partikel sama disebut hukum?", options:["Avogadro","Dalton","Proust","Lavoisier"], answer:"Avogadro"},
+
+    {question:"Hukum dasar kimia yang paling awal ditemukan adalah?", options:["Lavoisier","Dalton","Proust","Avogadro"], answer:"Lavoisier"},
+    {question:"Hukum yang berkaitan dengan molekul gas adalah?", options:["Avogadro","Dalton","Proust","Lavoisier"], answer:"Avogadro"},
+
+    {question:"Jika unsur membentuk dua senyawa, perbandingan massanya sederhana adalah hukum?", options:["Dalton","Proust","Lavoisier","Avogadro"], answer:"Dalton"},
+    {question:"Hukum yang menjelaskan komposisi senyawa tetap adalah?", options:["Proust","Dalton","Lavoisier","Avogadro"], answer:"Proust"}
+
+    
+  ]
+};
+
+// TRACKING
+let usedQuestions = {
+  anion: [],
+  tatanama: [],
+  reaksi: [],
+  stoikiometri: []
+};
+
+let userAnswers = [];
+let questions = [];
+let currentIndex = 0;
+let score = 0;
+let timerInterval;
+let timeLeft = 10;
+let answered = false;
+
+// START
+function startQuiz() {
+  startScreen.style.display = "none";
+  menuScreen.style.display = "block";
+}
+
+// PILIH KATEGORI
+function selectCategory(category) {
+  menuScreen.style.display = "none";
+  quizScreen.style.display = "block";
+
+  let pool = allQuestions[category];
+
+  if (usedQuestions[category].length >= pool.length) {
+    usedQuestions[category] = [];
+  }
+
+  let available = pool.filter(q => !usedQuestions[category].includes(q));
+  available = shuffle(available);
+
+  questions = available.slice(0, Math.min(20, available.length));
+  usedQuestions[category].push(...questions);
+
+  currentIndex = 0;
+  score = 0;
+  userAnswers = [];
+
+  showQuestion();
+}
+
+// TAMPIL SOAL
+function showQuestion() {
+  clearInterval(timerInterval);
+  answered = false;
+
+  let q = questions[currentIndex];
+  question.innerHTML = q.question;
+  progress.innerText = "Soal " + (currentIndex + 1) + " / " + questions.length;
+
+  options.innerHTML = "";
+
+  let opts = shuffle([...q.options]);
+
+  opts.forEach(opt => {
+    let btn = document.createElement("button");
+    btn.innerHTML = opt;
+
+    btn.onclick = () => {
+      if (answered) return;
+      answered = true;
+
+      let correct = q.answer;
+
+      userAnswers.push({
+        question: q.question,
+        selected: opt,
+        correct: correct
+      });
+
+      if (opt === correct) {
+        btn.style.background = "green";
+        soundBenar.currentTime = 0;
+        soundBenar.play();
+        score++;
+      } else {
+        btn.style.background = "red";
+        soundSalah.currentTime = 0;
+        soundSalah.play();
+
+        Array.from(options.children).forEach(b => {
+          if (b.innerHTML === correct) {
+            b.style.background = "green";
+          }
+        });
+      }
+
+      clearInterval(timerInterval);
+      setTimeout(nextQuestion, 500);
+    };
+
+    options.appendChild(btn);
+  });
+
+  startTimer();
+}
+
+// TIMER
+function startTimer() {
+  timeLeft = 10;
+  document.getElementById("timer").innerText = "Waktu: " + timeLeft;
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById("timer").innerText = "Waktu: " + timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      soundSalah.currentTime = 0;
+      soundSalah.play();
+
+      userAnswers.push({
+        question: questions[currentIndex].question,
+        selected: "Tidak menjawab",
+        correct: questions[currentIndex].answer
+      });
+
+      nextQuestion();
+    }
+  }, 1000);
+}
+
+// NEXT
+function nextQuestion() {
+  currentIndex++;
+  if (currentIndex < questions.length) {
+    showQuestion();
+  } else {
+    showResult();
+  }
+}
+
+// HASIL
+function showResult() {
+  clearInterval(timerInterval);
+
+  quizScreen.style.display = "none";
+  resultScreen.style.display = "block";
+
+  let nilai = Math.round((score / questions.length) * 100);
+
+  finalScore.innerText =
+    "Skor: " + score + "/" + questions.length +
+    " | Nilai: " + nilai;
+}
+
+// DETAIL TOGGLE
+function showDetail() {
+  let box = document.getElementById("detailBox");
+  let btn = document.getElementById("btnDetail");
+
+  if (box.style.display === "block") {
+    box.style.display = "none";
+    btn.innerText = "Lihat Detail";
+    return;
+  }
+
+  box.style.display = "block";
+  btn.innerText = "Tutup Detail";
+  box.innerHTML = "<h3>Jawaban Salah</h3>";
+
+  userAnswers.forEach(item => {
+    if (item.selected !== item.correct) {
+      box.innerHTML += `
+        <p>
+        <b>Soal:</b> ${item.question}<br>
+        <b>Kamu:</b> <span style="color:red">${item.selected}</span><br>
+        <b>Benar:</b> <span style="color:green">${item.correct}</span>
+        </p><hr>`;
+    }
+  });
+
+  if (!userAnswers.some(i => i.selected !== i.correct)) {
+    box.innerHTML += "<p style='color:green'>Semua benar!</p>";
+  }
+}
+
+// BACK
+function backToMenu() {
+  resultScreen.style.display = "none";
+  menuScreen.style.display = "block";
+}
+
+function backToMenuFromQuiz() {
+  clearInterval(timerInterval);
+
+  quizScreen.style.display = "none";
+  menuScreen.style.display = "block";
+
+  currentIndex = 0;
+  score = 0;
+  userAnswers = [];
+}
+
+</script>
+
+</body>
+</html>
